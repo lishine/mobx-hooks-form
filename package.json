@@ -3,7 +3,9 @@
     "license": "MIT",
     "main": "dist/index.js",
     "typings": "dist/index.d.ts",
-    "files": ["dist"],
+    "files": [
+        "dist"
+    ],
     "scripts": {
         "start": "tsdx watch",
         "build": "tsdx build",
@@ -44,6 +46,7 @@
         "@typescript-eslint/parser": "^2.21.0",
         "eslint": "^6.8.0",
         "eslint-config-prettier": "^6.10.0",
+        "eslint-config-react-app": "^5.2.0",
         "eslint-config-standard-react": "^9.2.0",
         "eslint-plugin-import": "^2.20.1",
         "eslint-plugin-node": "^11.0.0",
@@ -67,5 +70,11 @@
         "lodash": "^4.17.15",
         "lodash-es": "^4.17.15"
     },
-    "keywords": ["React", "mobX", "hooks", "context", "form"]
+    "keywords": [
+        "React",
+        "mobX",
+        "hooks",
+        "context",
+        "form"
+    ]
 }

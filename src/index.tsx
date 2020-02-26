@@ -1,194 +1,213 @@
-import React, { useEffect, useContext } from 'react'
-import { autorun, action } from 'mobx'
+import React, { useContext } from 'react'
+import { autorun, computed, action, observable } from 'mobx'
 import { useLocalStore, observer } from 'mobx-react-lite'
 import { isEmpty } from 'lodash'
-import { has, pick } from 'lodash/fp'
+import { pick } from 'lodash/fp'
 import * as yup from 'yup'
 
 function getErrorsFromValidationError(validationError: yup.ValidationError): Errors {
-    const FIRST_ERROR = 0
-    return validationError.inner.reduce((errors, error) => {
-        return {
-            ...errors,
-            [error.path]: error.errors[FIRST_ERROR],
-        }
-    }, {})
+	const FIRST_ERROR = 0
+	return validationError.inner.reduce((errors, error) => {
+		return {
+			...errors,
+			[error.path]: error.errors[FIRST_ERROR],
+		}
+	}, {})
 }
 
-export function validate(schema: yup.ObjectSchema<Values>, values: {}) {
-    try {
-        schema.validateSync(values, { abortEarly: false, recursive: true })
-        return {}
-    } catch (error) {
-        return getErrorsFromValidationError(error)
-    }
+function validate(schema: yup.ObjectSchema<Values>, values: {}) {
+	try {
+		schema.validateSync(values, { abortEarly: false, recursive: true })
+		return {}
+	} catch (error) {
+		return getErrorsFromValidationError(error)
+	}
 }
 
 interface Values {
-    [index: string]: yup.Schema<any>
+	[index: string]: yup.Schema<any>
 }
 interface Touched {
-    [index: string]: boolean
+	[index: string]: boolean
 }
 interface Errors {
-    [index: string]: string
+	[index: string]: string
 }
 
-export function useForm({
-    scheme,
-    initialValues,
-    name = '',
-}: {
-    scheme: yup.ObjectSchema<Values>
-    initialValues: Values
-    name: string
-}) {
-    console.log('name', name)
-    const keys = Object.keys(initialValues)
-
-    const state = useLocalStore(() => ({
-        values: initialValues || ({} as Values),
-        touched: {} as Touched,
-        errors: {} as Errors,
-        setValue: action('setValue', (key: string) => (value: any) => {
-            state.values[key] = value
-        }),
-        touch: action('touch', (key: string) => {
-            state.touched[key] = true
-        }),
-        touchAll: action('touchAll', () => {
-            keys.forEach(key => {
-                state.touched[key] = true
-            })
-        }),
-
-        updateValues: action('updateValues', (values: Values) => {
-            Object.assign(state.values, pick(keys)(values))
-        }),
-
-        get validations() {
-            return validate(scheme, state.values)
-        },
-        get isValid() {
-            return isEmpty(state.validations)
-        },
-    }))
-
-    const _validationsToErrors = () => {
-        console.log('_validationsToErrors')
-        Object.keys(state.errors).forEach(key => {
-            if (!has(key)(state.validations)) {
-                delete state.errors[key]
-            }
-        })
-        Object.entries(state.validations).forEach(([key, value]) => {
-            if (state.touched[key]) {
-                state.errors[key] = value
-            }
-        })
-    }
-
-    useEffect(
-        () =>
-            autorun(() => {
-                _validationsToErrors()
-            }),
-        []
-    )
-
-    const handleChange = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('e.target.value', e.target.value)
-        console.log('key', key)
-        state.setValue(key)(e.target.value)
-    }
-    const handleCheckedChange = (key: string) => (
-        e: React.ChangeEvent<HTMLInputElement>
-    ) => state.setValue(key)(e.target.checked)
-    const handleBlur = (key: string) => () => state.touch(key)
-    const getValue = (key: string) => state.values[key]
-    const getError = (key: string) => state.errors[key]
-
-    return {
-        getValue,
-        getError,
-        getValues: () => state.values,
-        updateValues: state.updateValues,
-        setValue: state.setValue,
-        isValid: () => state.isValid,
-        handleChange,
-        handleCheckedChange,
-        handleBlur,
-        formName: name,
-        getFieldProps: (key: string) => ({
-            value: getValue(key),
-            onChange: handleChange(key),
-            onBlur: handleBlur(key),
-            name: key,
-        }),
-        handleSubmit: (submit: () => void) => (
-            e: React.ChangeEvent<HTMLInputElement>
-        ) => {
-            e.preventDefault()
-            state.touchAll()
-            _validationsToErrors()
-            if (state.isValid) {
-                submit()
-            }
-        },
-        isRequired: (name: string) => (scheme.fields[name] as any)._exclusive.required,
-    }
+interface UseForm {
+	scheme: yup.ObjectSchema<Values>
+	initialValues: Values
+	name: string
 }
+
+class Store {
+	constructor(props: UseForm) {
+		const { scheme, initialValues, name = '' } = props
+		this.scheme = scheme
+		this.formName = name
+		this.keys = Object.keys(initialValues)
+		this.values = initialValues || {}
+
+		autorun(() => {
+			this.keys.forEach(key => {
+				const validation = this.validations[key]
+				const touched = this.touched[key]
+				if (!validation) {
+					delete this.errors[key]
+				} else if (touched) {
+					this.errors[key] = validation
+				}
+			})
+		})
+	}
+
+	formName: string
+	scheme: yup.ObjectSchema<Values>
+	keys: string[]
+
+	@observable values: Values
+	@observable touched = {} as Touched
+	@observable errors = {} as Errors
+
+	@computed get validations() {
+		return validate(this.scheme, this.values)
+	}
+	@computed get isValid() {
+		return isEmpty(this.validations)
+	}
+
+	@action setValue = (key: string) => (value: any) => {
+		this.values[key] = value
+	}
+
+	@action touch = (key: string) => (this.touched[key] = true)
+	@action touchAll = () =>
+		this.keys.forEach(key => {
+			this.touched[key] = true
+		})
+
+	@action updateValues = (values: Values) =>
+		Object.assign(this.values, pick(this.keys)(values))
+
+	@action handleChange = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+		this.setValue(key)(e.target.value)
+	}
+	@action handleCheckedChange = (key: string) => (
+		e: React.ChangeEvent<HTMLInputElement>
+	) => {
+		this.setValue(key)(e.target.checked)
+	}
+	@action handleBlur = (key: string) => () => {
+		this.touch(key)
+	}
+
+	getValue = (key: string) => this.values[key]
+	getError = (key: string) => this.errors[key]
+	isRequired = (name: string) => (this.scheme.fields[name] as any)._exclusive.required
+
+	@action handleSubmit = (submit: () => void) => (
+		e: React.ChangeEvent<HTMLInputElement>
+	) => {
+		e.preventDefault()
+		this.touchAll()
+		if (this.isValid) {
+			submit()
+		}
+	}
+}
+
+export const useForm = (props: UseForm) =>
+	useLocalStore(source => new Store(source), props)
 
 const FormContext = React.createContext({} as ReturnType<typeof useForm>)
-const FieldContext = React.createContext({})
 export const useFormContext = () => useContext(FormContext)
+export const FormContextProvider = ({
+	children,
+	formStore,
+}: {
+	children: React.ReactChildren
+	formStore: ReturnType<typeof useForm>
+}) => <FormContext.Provider value={formStore}>{children}</FormContext.Provider>
+
+const FieldContext = React.createContext({})
 export const useFieldContext = () => useContext(FieldContext)
-
-export const FormContextProvider = observer(
-    ({
-        children,
-        formStore,
-    }: {
-        children: React.ReactChildren
-        formStore: ReturnType<typeof useForm>
-    }) => <FormContext.Provider value={formStore}>{children}</FormContext.Provider>
-)
-
 export const FieldContextProvider = observer(
-    ({
-        children,
-        name,
-    }: {
-        children: (arg0: any) => React.ReactNode | React.ReactChildren
-        name: string
-    }) => {
-        const {
-            getValue,
-            setValue,
-            getError,
-            handleBlur,
-            handleChange,
-            handleCheckedChange,
-            isRequired,
-            formName,
-        } = useContext(FormContext)
+	({
+		children,
+		name,
+	}: {
+		children: (arg0: any) => React.ReactNode | React.ReactChildren
+		name: string
+	}) => {
+		const store = useContext(FormContext)
 
-        const fieldContext = {
-            name,
-            id: `${formName}_${name}`,
-            setValue: setValue(name),
-            error: getError(name),
-            value: getValue(name),
-            onBlur: handleBlur(name),
-            onChange: handleChange(name),
-            onCheckedChange: handleCheckedChange(name),
-            isRequired: isRequired(name),
-        }
+		const fieldContext = {
+			name,
+			id: `${store.formName}_${name}`,
+			setValue: store.setValue(name),
+			error: store.getError(name),
+			value: store.getValue(name),
+			onBlur: store.handleBlur(name),
+			onChange: store.handleChange(name),
+			onCheckedChange: store.handleCheckedChange(name),
+			isRequired: store.isRequired(name),
+		}
 
-        return (
-            <FieldContext.Provider value={fieldContext}>
-                {typeof children === 'function' ? children(fieldContext) : children}
-            </FieldContext.Provider>
-        )
-    }
+		return (
+			<FieldContext.Provider value={fieldContext}>
+				{typeof children === 'function' ? children(fieldContext) : children}
+			</FieldContext.Provider>
+		)
+	}
 )
+
+// Object.keys(state.errors).forEach(key => {
+// if (!has(key)(state.validations)) {
+// delete state.errors[key]
+// }
+// })
+// @action validationsToErrors() {
+//     Object.keys(state.errors).forEach(key => {
+//         if (!has(key)(state.validations)) {
+//             delete state.errors[key]
+//         }
+//     })
+//     Object.entries(state.validations).forEach(([key, value]) => {
+//         if (state.touched[key]) {
+//             state.errors[key] = value
+//         }
+//     })
+// }
+// state.validationsToErrors()
+// autorun(() => {
+//     state.validationsToErrors()
+// })
+// @observable errors = {} as Errors
+// @computed get errors() {
+// 	const errors = {} as Errors
+// 	Object.entries(this.validations).forEach(([key, value]) => {
+// 		if (this.touched[key]) {
+// 			errors[key] = value
+// 		}
+// 	})
+// 	return errors
+// }
+// export function useForm(props: UseForm) {
+// 	const state = useLocalStore(source => new Store(source), props)
+
+// 	return {
+// 		getValue: state.getValue,
+// 		getError: state.getError,
+// 		updateValues: state.updateValues,
+// 		setValue: state.setValue,
+// 		getValues: state.getValues,
+// 		isValid: () => state.isValid,
+// 		handleChange: state.handleChange,
+// 		handleCheckedChange: state.handleCheckedChange,
+// 		handleBlur: state.handleBlur,
+// 		formName: state.formName,
+// 		getFieldProps: state.getFieldProps,
+// 		handleSubmit: state.handleSubmit,
+// 		isRequired: state.isRequired,
+// 	}
+// }

@@ -20,7 +20,6 @@ import { sleep } from './utils'
 
 // Local
 import { Lookahead } from './components/Lookahead'
-import { Button } from './components/Button'
 import { Icon } from './components/Icon'
 import { theme } from './theme'
 

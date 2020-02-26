@@ -6,5 +6,4 @@ https://codesandbox.io/s/mobx-hooks-form-2bzur
 
 -   Tests
 -   Documentation
--   codesandbox
 -   Example in typescript

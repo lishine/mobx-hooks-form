@@ -1,4 +1,4 @@
-# React form package using mobX, React hooks and context
+## React form using mobx, hooks and context
 
 https://codesandbox.io/s/mobx-hooks-form-2bzur
 

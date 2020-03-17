@@ -1,0 +1,9 @@
+label.requiredNoClash:after,
+.nav-item a.requiredNoClash:after {
+	color: #e32;
+	content: '*';
+}
+
+body {
+	background-color: white !important;
+}

@@ -14,7 +14,6 @@ function getErrorsFromValidationError(validationError: yup.ValidationError): Err
 		}
 	}, {})
 }
-
 function validate(schema: yup.ObjectSchema<Values>, values: {}) {
 	try {
 		schema.validateSync(values, { abortEarly: false, recursive: true })
@@ -33,7 +32,6 @@ interface Touched {
 interface Errors {
 	[index: string]: string
 }
-
 interface UseForm {
 	scheme: yup.ObjectSchema<Values>
 	initialValues: Values
@@ -104,6 +102,25 @@ class Store {
 	getValue = (key: string) => this.values[key]
 	getError = (key: string) => this.errors[key]
 	isRequired = (name: string) => (this.scheme.fields[name] as any)._exclusive.required
+	getId = (name: string) => `${this.formName}_${name}`
+	getField = (name: string) => {
+		const store = this
+		return {
+			name,
+			get value() {
+				return store.getValue(name)
+			},
+			get error() {
+				return store.getError(name)
+			},
+			id: store.getId(name),
+			setValue: store.setValue(name),
+			onBlur: store.handleBlur(name),
+			onChange: store.handleChange(name),
+			onCheckedChange: store.handleCheckedChange(name),
+			isRequired: store.isRequired(name),
+		}
+	}
 
 	@action handleSubmit = (submit: () => void) => (
 		e: React.ChangeEvent<HTMLInputElement>
@@ -129,6 +146,8 @@ export const FormContextProvider = ({
 	formStore: ReturnType<typeof useForm>
 }) => <FormContext.Provider value={formStore}>{children}</FormContext.Provider>
 
+export const useField = (name: string) => useContext(FormContext).getField(name)
+
 const FieldContext = React.createContext({})
 export const useFieldContext = () => useContext(FieldContext)
 export const FieldContextProvider = observer(
@@ -139,23 +158,11 @@ export const FieldContextProvider = observer(
 		children: (arg0: any) => React.ReactNode | React.ReactChildren
 		name: string
 	}) => {
-		const store = useContext(FormContext)
-
-		const fieldContext = {
-			name,
-			id: `${store.formName}_${name}`,
-			setValue: store.setValue(name),
-			error: store.getError(name),
-			value: store.getValue(name),
-			onBlur: store.handleBlur(name),
-			onChange: store.handleChange(name),
-			onCheckedChange: store.handleCheckedChange(name),
-			isRequired: store.isRequired(name),
-		}
+		const field = useContext(FormContext).getField(name)
 
 		return (
-			<FieldContext.Provider value={fieldContext}>
-				{typeof children === 'function' ? children(fieldContext) : children}
+			<FieldContext.Provider value={field}>
+				{typeof children === 'function' ? children(field) : children}
 			</FieldContext.Provider>
 		)
 	}

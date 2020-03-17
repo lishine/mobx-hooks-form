@@ -1,0 +1,18 @@
+import React from 'react'
+import { observer } from 'mobx-react-lite'
+import { Checkbox as ReakitCheckbox } from 'reakit'
+import { useField } from '../../../dist'
+
+export const Checkbox = observer(props => {
+	const { value, onCheckedChange } = useField(props.name)
+
+	console.log(`rendering ${props.name}`)
+	return (
+		<ReakitCheckbox
+			checked={value}
+			name={props.name}
+			onChange={onCheckedChange}
+			{...props}
+		/>
+	)
+})

@@ -7,3 +7,5 @@ https://codesandbox.io/s/mobx-hooks-form-2bzur
 -   Tests
 -   Documentation
 -   Example in typescript
+-   Remove tabs
+-   Validation optimization - not running on whole form

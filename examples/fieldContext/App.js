@@ -26,6 +26,7 @@ import { theme } from './theme'
 import 'react-bootstrap-switch/dist/css/bootstrap3/react-bootstrap-switch.min.css'
 import './app.css'
 import { SubmitButton } from './components/SubmitButton'
+import { Checkbox } from './components/Checkbox'
 
 const scheme = yup.object({
 	publisher: yup
@@ -38,7 +39,8 @@ const scheme = yup.object({
 	reportId: yup.string().required('Looker report id is required'),
 	icon: yup.string().required('Icon is required'),
 	enabled: yup.boolean(),
-	description: yup.string(),
+    description: yup.string(),
+    checkFieldName: yup.boolean().oneOf([true]),
 })
 
 const initialValues = {
@@ -47,7 +49,8 @@ const initialValues = {
 	reportId: '',
 	enabled: true,
 	description: '',
-	icon: 'fa-file-chart-line',
+    icon: 'fa-file-chart-line',
+    checkFieldName: true,
 }
 
 const WrapField = observer(({ children, label }) => {
@@ -119,6 +122,11 @@ export const App = () => {
 											/>
 										</WrapField>
 									)}
+								</FieldContextProvider>
+								<FieldContextProvider name="checkFieldName">
+									<WrapField label="Check Field">
+										<Checkbox />
+									</WrapField>
 								</FieldContextProvider>
 								<FieldContextProvider name="reportId">
 									<WrapField label="Report ID:">

@@ -4,14 +4,14 @@ import { Input as BSInput } from 'reactstrap'
 import { useField } from '../../../dist'
 
 export const Input = observer(props => {
-	const { value, error, onBlur, onChange, id } = useField(props.name)
+	const { value, error, onBlur, onChange, id } = useField(props.path)
 
-	console.log(`rendering ${props.name}`)
+	console.log(`rendering ${props.path}`)
 	return (
 		<BSInput
 			id={id}
 			invalid={!!error}
-			name={props.name}
+			name={props.path}
 			value={value}
 			onChange={onChange}
 			onBlur={onBlur}

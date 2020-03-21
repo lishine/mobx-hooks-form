@@ -21,9 +21,10 @@ const Loading = () => (
 	</div>
 )
 
-export const Button = ({ disabled, children, isLoading, ...props }) => (
+export const Button = ({ className, disabled, children, isLoading, ...props }) => (
 	<ReakitButton
 		className={cx(
+			className,
 			'btn',
 			'btn-primary',
 			css([

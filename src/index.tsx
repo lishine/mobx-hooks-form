@@ -1,8 +1,8 @@
 import React, { useContext } from 'react'
-import { autorun, computed, action, observable } from 'mobx'
+import { computed, action, observable, toJS, reaction, autorun } from 'mobx'
+import { computedFn } from 'mobx-utils'
 import { useLocalStore, observer } from 'mobx-react-lite'
-import { isEmpty } from 'lodash'
-import { pick } from 'lodash/fp'
+import { isEmpty, get, set } from 'lodash'
 import * as yup from 'yup'
 
 function getErrorsFromValidationError(validationError: yup.ValidationError): Errors {
@@ -24,68 +24,87 @@ function validate(schema: yup.ObjectSchema<Values>, values: {}) {
 }
 
 interface Values {
-	[index: string]: yup.Schema<any>
-}
-interface Touched {
-	[index: string]: boolean
+	[index: string]: any
 }
 interface Errors {
 	[index: string]: string
 }
+interface Touched {
+	[index: string]: boolean
+}
 interface UseForm {
-	scheme: yup.ObjectSchema<Values>
-	initialValues: Values
-	name: string
+	schema: yup.ObjectSchema<Values>
+	defaultValues: Values
+	formName: string
 }
 
 class Store {
 	constructor(props: UseForm) {
-		const { scheme, initialValues, name = '' } = props
-		this.scheme = scheme
-		this.formName = name
-		this.keys = Object.keys(initialValues)
-		this.values = initialValues || {}
-
-		autorun(() => {
-			this.keys.forEach(key => {
-				const validation = this.validations[key]
-				const touched = this.touched[key]
-				if (!validation) {
-					delete this.errors[key]
-				} else if (touched) {
-					this.errors[key] = validation
-				}
-			})
-		})
+		const { schema, defaultValues, formName = '' } = props
+		this.defaultValues = defaultValues || {}
+		this.schema = schema
+		this.formName = formName
+		this.values = defaultValues || {}
 	}
 
+	defaultValues: Values
 	formName: string
-	scheme: yup.ObjectSchema<Values>
-	keys: string[]
+	schema: yup.ObjectSchema<Values>
 
+	@observable isTouchedAll = false
 	@observable values: Values
 	@observable touched = {} as Touched
-	@observable errors = {} as Errors
 
 	@computed get validations() {
-		return validate(this.scheme, this.values)
+		return validate(this.schema, this.values)
 	}
 	@computed get isValid() {
 		return isEmpty(this.validations)
 	}
 
-	@action setValue = (key: string) => (value: any) => {
-		this.values[key] = value
+	@action reset = () => {
+		this.values = this.defaultValues
+		this.touched = {}
+		this.isTouchedAll = false
 	}
 
-	@action touch = (key: string) => (this.touched[key] = true)
-	@action touchAll = () =>
-		this.keys.forEach(key => {
-			this.touched[key] = true
-		})
+	@action add = (path: string) => (value?: any) => {
+		const v = this.getValue(path)
+		const ar = Array.isArray(v) ? v : []
+		if (value === undefined) {
+			const defaultAr = get(this.defaultValues, path)
+			if (Array.isArray(defaultAr)) {
+				value = defaultAr[defaultAr.length - 1]
+			} else if (defaultAr !== undefined) {
+				value = defaultAr
+			} else {
+				value = ar[ar.length - 1]
+			}
+		}
+		ar.push(value)
+	}
+	@action remove = (path: string) => (index: number) => {
+		const ar = this.getValue(path)
+		if (!Array.isArray(ar) || index >= ar.length) {
+			console.error('trying to remove item from non array or at wrong index')
+		} else {
+			ar.splice(index, 1)
+		}
+	}
+	@action setValue = (path: string) => (value: any) => {
+		set(this.values, path, value)
+	}
+	@action setValues = (values: Values) => {
+		this.values = values
+	}
 
-	@action updateValues = (values: Values) =>
-		Object.assign(this.values, pick(this.keys)(values))
+	@action touch = (key: string) => {
+		console.log('touching key', key)
+		this.touched[key] = true
+	}
+	@action touchAll = () => {
+		this.isTouchedAll = true
+	}
 
 	@action handleChange = (key: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
 		this.setValue(key)(e.target.value)
@@ -99,26 +118,63 @@ class Store {
 		this.touch(key)
 	}
 
-	getValue = (key: string) => this.values[key]
-	getError = (key: string) => this.errors[key]
-	isRequired = (name: string) => (this.scheme.fields[name] as any)._exclusive.required
-	getId = (name: string) => `${this.formName}_${name}`
-	getField = (name: string) => {
+	isRequired = (path: string) => {
+		try {
+			const { tests } = yup
+				.reach(this.schema, path, this.values, this.values)
+				.describe()
+			return !!tests?.find((test: any) => test.name === 'required') ?? false
+		} catch (error) {
+			return false
+		}
+	}
+
+	@computed get errors() {
+		return this.isTouchedAll
+			? this.validations
+			: Object.fromEntries(
+					Object.entries(this.validations).filter(([key]) => this.touched[key])
+			  )
+	}
+	getError = computedFn((key: string) => this.errors[key])
+
+	getValue = (key: string) => get(this.values, key) ?? ''
+	getId = (path: string) => `${this.formName}_${path}`
+	getField = (path: string) => {
 		const store = this
 		return {
-			name,
+			path,
 			get value() {
-				return store.getValue(name)
+				return store.getValue(path)
 			},
 			get error() {
-				return store.getError(name)
+				return store.getError(path)
 			},
-			id: store.getId(name),
-			setValue: store.setValue(name),
-			onBlur: store.handleBlur(name),
-			onChange: store.handleChange(name),
-			onCheckedChange: store.handleCheckedChange(name),
-			isRequired: store.isRequired(name),
+			id: store.getId(path),
+			setValue: store.setValue(path),
+			onBlur: store.handleBlur(path),
+			onChange: store.handleChange(path),
+			onCheckedChange: store.handleCheckedChange(path),
+			isRequired: store.isRequired(path),
+			add: store.add(path),
+			remove: store.remove(path),
+		}
+	}
+	getFieldArray = (path: string) => {
+		const store = this
+		return {
+			path,
+			get error() {
+				return store.getError(path)
+			},
+			get values() {
+				const v = store.getValue(path)
+				return Array.isArray(v) ? v : []
+			},
+			id: store.getId(path),
+			isRequired: store.isRequired(path),
+			add: store.add(path),
+			remove: store.remove(path),
 		}
 	}
 
@@ -146,19 +202,20 @@ export const FormContextProvider = ({
 	formStore: ReturnType<typeof useForm>
 }) => <FormContext.Provider value={formStore}>{children}</FormContext.Provider>
 
-export const useField = (name: string) => useContext(FormContext).getField(name)
+export const useField = (path: string) => useContext(FormContext).getField(path)
+export const useFieldArray = (path: string) => useContext(FormContext).getFieldArray(path)
 
 const FieldContext = React.createContext({})
 export const useFieldContext = () => useContext(FieldContext)
 export const FieldContextProvider = observer(
 	({
 		children,
-		name,
+		path,
 	}: {
 		children: (arg0: any) => React.ReactNode | React.ReactChildren
-		name: string
+		path: string
 	}) => {
-		const field = useContext(FormContext).getField(name)
+		const field = useContext(FormContext).getField(path)
 
 		return (
 			<FieldContext.Provider value={field}>

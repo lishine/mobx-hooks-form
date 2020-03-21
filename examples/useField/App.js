@@ -22,8 +22,9 @@ import 'react-bootstrap-switch/dist/css/bootstrap3/react-bootstrap-switch.min.cs
 import './app.css'
 import { SubmitButton } from './components/SubmitButton'
 import { Checkbox } from './components/Checkbox'
+import { Ars } from './components/ars'
 
-const scheme = yup.object({
+const schema = yup.object({
 	publisher: yup
 		.mixed()
 		.transform(obj => {
@@ -31,14 +32,19 @@ const scheme = yup.object({
 		})
 		.required('Publisher is required'),
 	uiName: yup.string().required('Name is required'),
-	reportId: yup.string().required('Looker report id is required'),
+	reportId: yup.string().required('Report id is required'),
 	icon: yup.string().required('Icon is required'),
 	enabled: yup.boolean(),
-	description: yup.string(),
-	checkFieldName: yup.boolean().oneOf([true]),
+	d: yup.object({
+		description: yup.string(),
+	}),
+	checkFieldName: yup
+		.boolean()
+		.oneOf([true], 'checkFieldName is required')
+		.required(),
 })
 
-const initialValues = {
+const defaultValues = {
 	publisher: { name: 'selected' },
 	uiName: '',
 	reportId: '',
@@ -46,10 +52,11 @@ const initialValues = {
 	description: '',
 	icon: 'fa-file-chart-line',
 	checkFieldName: true,
+	ars: [1, 2, 3],
 }
 
-const WrapField = observer(({ name, children, label }) => {
-	const { isRequired, error, id } = useField(name)
+const WrapField = observer(({ path, children, label }) => {
+	const { isRequired, error, id } = useField(path)
 	return (
 		<Row sx={{ mb: '1em' }}>
 			<Col>
@@ -66,7 +73,7 @@ const WrapField = observer(({ name, children, label }) => {
 })
 
 export const App = () => {
-	const formStore = useForm({ initialValues, scheme, name: 'formName' })
+	const formStore = useForm({ defaultValues, schema, formName: 'formName' })
 	const [isSubmitting, setIsSubmitting] = useState(false)
 
 	console.log('rendering App')
@@ -89,7 +96,7 @@ export const App = () => {
 								onSubmit={formStore.handleSubmit(submit)}
 							>
 								<div sx={{ mt: 2, mb: 5 }}>
-									<FieldContextProvider name="enabled">
+									<FieldContextProvider path="enabled">
 										{({ value, setValue }) => {
 											console.log('rendering Switch')
 
@@ -108,9 +115,9 @@ export const App = () => {
 										}}
 									</FieldContextProvider>
 								</div>
-								<FieldContextProvider name="publisher">
+								<FieldContextProvider path="publisher">
 									{fieldContext => (
-										<WrapField name="publisher" label="Publisher:">
+										<WrapField path="publisher" label="Publisher:">
 											<Lookahead
 												placeholder="Select publisher"
 												{...fieldContext}
@@ -118,19 +125,22 @@ export const App = () => {
 										</WrapField>
 									)}
 								</FieldContextProvider>
-								<WrapField name="checkFieldName" label="Check Field">
-									<Checkbox sx={{ ml: 2 }} name="checkFieldName" />
+								<WrapField path="checkFieldName" label="Check Field">
+									<Checkbox sx={{ ml: 2 }} path="checkFieldName" />
 								</WrapField>
-								<WrapField name="reportId" label="Report ID:">
-									<Input name="reportId" type="string" />
+								<WrapField path="ars" label="Array">
+									<Ars sx={{}} path="ars" />
 								</WrapField>
-								<WrapField name="uiName" label="Name:">
-									<Input name="uiName" autoComplete="off" />
+								<WrapField path="reportId" label="Report ID:">
+									<Input path="reportId" type="string" />
 								</WrapField>
-								<WrapField name="description" label="Description:">
-									<Input name="description" />
+								<WrapField path="uiName" label="Name:">
+									<Input path="uiName" autoComplete="off" />
 								</WrapField>
-								<WrapField name="icon" label="Icon:">
+								<WrapField path="d.description" label="Description:">
+									<Input path="d.description" />
+								</WrapField>
+								<WrapField path="icon" label="Icon:">
 									<div
 										sx={{
 											display: 'flex',
@@ -138,7 +148,7 @@ export const App = () => {
 											gap: 1,
 										}}
 									>
-										<Input name="icon" />
+										<Input path="icon" />
 										<Icon value={formStore.getValue('icon')} />
 									</div>
 								</WrapField>

@@ -13,6 +13,7 @@
 		"emotion": "^10.0.27",
 		"mobx": "^5.15.4",
 		"mobx-react-lite": "^1.5.2",
+		"mobx-utils": "^5.5.5",
 		"react-app-polyfill": "^1.0.6",
 		"react-bootstrap-switch": "^15.5.3",
 		"react-bootstrap-typeahead": "^3.4.7",

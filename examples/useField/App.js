@@ -22,7 +22,7 @@ import 'react-bootstrap-switch/dist/css/bootstrap3/react-bootstrap-switch.min.cs
 import './app.css'
 import { SubmitButton } from './components/SubmitButton'
 import { Checkbox } from './components/Checkbox'
-import { Ars } from './components/ars'
+import { Ar } from './components/Ar'
 
 const schema = yup.object({
 	publisher: yup
@@ -129,7 +129,7 @@ export const App = () => {
 									<Checkbox sx={{ ml: 2 }} path="checkFieldName" />
 								</WrapField>
 								<WrapField path="ars" label="Array">
-									<Ars sx={{}} path="ars" />
+									<Ar sx={{}} path="ars" />
 								</WrapField>
 								<WrapField path="reportId" label="Report ID:">
 									<Input path="reportId" type="string" />

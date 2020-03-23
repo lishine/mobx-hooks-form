@@ -69,16 +69,19 @@ class Store {
 	}
 
 	@action add = (path: string) => (value?: any) => {
-		const v = this.getValue(path)
-		const ar = Array.isArray(v) ? v : []
+		let ar = this.getValue(path)
+		if (!Array.isArray(ar)) {
+			this.setValue(path)([])
+			ar = this.getValue(path)
+		}
 		if (value === undefined) {
 			const defaultAr = get(this.defaultValues, path)
 			if (Array.isArray(defaultAr)) {
-				value = defaultAr[defaultAr.length - 1]
+				value = defaultAr.length ? defaultAr[defaultAr.length - 1] : ''
 			} else if (defaultAr !== undefined) {
 				value = defaultAr
 			} else {
-				value = ar[ar.length - 1]
+				value = ar.length ? ar[ar.length - 1] : ''
 			}
 		}
 		ar.push(value)
@@ -138,7 +141,8 @@ class Store {
 	}
 	getError = computedFn((key: string) => this.errors[key])
 
-	getValue = (key: string) => get(this.values, key) ?? ''
+	getValue = computedFn((path: string) => get(this.values, path) ?? '')
+	getValueLength = computedFn((path: string) => this.getValue(path)?.length ?? 0)
 	getId = (path: string) => `${this.formName}_${path}`
 	getField = (path: string) => {
 		const store = this
@@ -167,9 +171,8 @@ class Store {
 			get error() {
 				return store.getError(path)
 			},
-			get values() {
-				const v = store.getValue(path)
-				return Array.isArray(v) ? v : []
+			get indexes() {
+				return Array.from(Array(store.getValueLength(path)).keys())
 			},
 			id: store.getId(path),
 			isRequired: store.isRequired(path),

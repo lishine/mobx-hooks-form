@@ -1,11 +1,36 @@
-## React form using mobx, hooks and context
+## React form using MobX, hooks and context
 
-https://codesandbox.io/s/mobx-hooks-form-2bzur
+### Features
+
+- any path form.a.b[1].input
+- array
+- useForm
+- useField
+- no extra rerenders
+- FormContext
+- FieldContext
+- joi validation
+- is field required info
+- typescript
+- explicit props - onChange, onBlur, value
+- debounce
+- submit
+- reset
+- state spy
+- array - defaults/copy-last when adding new record
+- array example - disabled row when empty
 
 ### TODO
 
--   Tests
--   Documentation
--   Example in typescript
--   Remove tabs
--   Validation optimization - not running on whole form
+- tests
+- CI
+- documentation
+- example in typescript
+- array id
+- accessability - auto focus field
+- submit button - on hover show required list
+- disabled fields logic
+- hidden fields logic
+- connect the example with yarn link
+- optimize package size (tslib)
+- isSubmitting -> form disabled

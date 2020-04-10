@@ -21,81 +21,104 @@ import { theme } from './theme'
 import 'react-bootstrap-switch/dist/css/bootstrap3/react-bootstrap-switch.min.css'
 import './app.css'
 import { SubmitButton } from './components/SubmitButton'
+import { Button } from './components/Button'
 import { Checkbox } from './components/Checkbox'
 import { Ar } from './components/Ar'
 
 const schema = yup.object({
-	publisher: yup
-		.mixed()
-		.transform(obj => {
-			return obj?.name || null
-		})
-		.required('Publisher is required'),
-	uiName: yup.string().required('Name is required'),
-	reportId: yup.string().required('Report id is required'),
-	icon: yup.string().required('Icon is required'),
-	enabled: yup.boolean(),
-	d: yup.object({
-		description: yup.string(),
-	}),
-	checkFieldName: yup
-		.boolean()
-		.oneOf([true], 'checkFieldName is required')
-		.required(),
+  publisher: yup
+    .mixed()
+    .transform((obj) => {
+      return obj?.name || null
+    })
+    .required('Publisher is required'),
+  uiName: yup.string().required('Name is required'),
+  reportId: yup.string().required('Report id is required'),
+  icon: yup.string().required('Icon is required'),
+  enabled: yup.boolean(),
+  d: yup.object({
+    description: yup.string(),
+  }),
+  checkFieldName: yup
+    .boolean()
+    .oneOf([true], 'checkFieldName is required')
+    .required(),
+  ars: yup
+    .array()
+    .of(yup.number().required())
+    .max(1001)
+    .required(),
 })
 
 const defaultValues = {
-	publisher: { name: 'selected' },
-	uiName: '',
-	reportId: '',
-	enabled: true,
-	description: '',
-	icon: 'fa-file-chart-line',
-	checkFieldName: true,
-	ars: [1, 2, 3],
+  publisher: { name: 'selected' },
+  uiName: '',
+  reportId: '',
+  enabled: true,
+  description: '',
+  icon: 'fa-file-chart-line',
+  checkFieldName: true,
+  ars: { firstName: 'First Name', familyName: 'Family Name' },
+  // ars: Array(1000).fill({
+  // firstName: 'First Name',
+  // familyName: 'Family Name',
+  // }),
 }
 
-const WrapField = observer(({ path, children, label }) => {
-	const { isRequired, error, id } = useField(path)
-	return (
-		<Row sx={{ mb: '1em' }}>
-			<Col>
-				<FormGroup>
-					<Label for={id} className={cs(isRequired && 'requiredNoClash')}>
-						{label}
-					</Label>
-					{children}
-					<div sx={{ position: 'absolute', color: 'error' }}>{error}</div>
-				</FormGroup>
-			</Col>
-		</Row>
-	)
+const WrapField = observer(({ path, children, label, ...props }) => {
+  const { isRequired, error, id } = useField(path)
+  return (
+    <Row sx={{ mb: '1em' }} {...props}>
+      <Col>
+        <FormGroup>
+          <Label for={id} className={cs(isRequired && 'requiredNoClash')}>
+            {label}
+          </Label>
+          {children}
+          <div sx={{ position: 'absolute', color: 'error' }}>{error}</div>
+        </FormGroup>
+      </Col>
+    </Row>
+  )
 })
 
 export const App = () => {
-	const formStore = useForm({ defaultValues, schema, formName: 'formName' })
-	const [isSubmitting, setIsSubmitting] = useState(false)
+  const formStore = useForm({
+    defaultValues,
+    schema,
+    formName: 'formName',
+    debug: true,
+  })
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-	console.log('rendering App')
+  console.log('rendering App')
 
-	const submit = useCallback(async () => {
-		setIsSubmitting(true)
-		await sleep(10000)
-		setIsSubmitting(false)
-	}, [])
+  const submit = useCallback(async () => {
+    setIsSubmitting(true)
+    await sleep(10000)
+    setIsSubmitting(false)
+  }, [])
 
-	return (
-		<Observer>
-			{() => {
-				console.log('rendering App-Component')
-				return (
-					<ThemeProvider theme={theme}>
-						<FormContextProvider formStore={formStore}>
-							<Form
-								sx={{ mx: 'auto', width: 400 }}
-								onSubmit={formStore.handleSubmit(submit)}
-							>
-								<div sx={{ mt: 2, mb: 5 }}>
+  return (
+    <Observer>
+      {() => {
+        console.log('rendering App-Component')
+        return (
+          <ThemeProvider theme={theme}>
+            <FormContextProvider formStore={formStore}>
+              <Form sx={{ mx: 'auto', width: 400 }} onSubmit={formStore.handleSubmit(submit)}>
+                <div
+                  sx={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    mt: 2,
+                    mb: 3,
+                  }}
+                >
+                  <SubmitButton isLoading={isSubmitting}>Submit</SubmitButton>
+                  <Button onClick={formStore.reset}>Reset</Button>
+                </div>
+                {/* <div sx={{ mt: 2, mb: 5 }}>
 									<FieldContextProvider path="enabled">
 										{({ value, setValue }) => {
 											console.log('rendering Switch')
@@ -114,8 +137,8 @@ export const App = () => {
 											)
 										}}
 									</FieldContextProvider>
-								</div>
-								<FieldContextProvider path="publisher">
+								</div> */}
+                {/* <FieldContextProvider path="publisher">
 									{fieldContext => (
 										<WrapField path="publisher" label="Publisher:">
 											<Lookahead
@@ -124,40 +147,39 @@ export const App = () => {
 											/>
 										</WrapField>
 									)}
-								</FieldContextProvider>
-								<WrapField path="checkFieldName" label="Check Field">
-									<Checkbox sx={{ ml: 2 }} path="checkFieldName" />
-								</WrapField>
-								<WrapField path="ars" label="Array">
-									<Ar sx={{}} path="ars" />
-								</WrapField>
-								<WrapField path="reportId" label="Report ID:">
-									<Input path="reportId" type="string" />
-								</WrapField>
-								<WrapField path="uiName" label="Name:">
-									<Input path="uiName" autoComplete="off" />
-								</WrapField>
-								<WrapField path="d.description" label="Description:">
-									<Input path="d.description" />
-								</WrapField>
-								<WrapField path="icon" label="Icon:">
-									<div
-										sx={{
-											display: 'flex',
-											grid: 'auto-flow / 300px auto',
-											gap: 1,
-										}}
-									>
-										<Input path="icon" />
-										<Icon value={formStore.getValue('icon')} />
-									</div>
-								</WrapField>
-								<SubmitButton isLoading={isSubmitting}>Save</SubmitButton>
-							</Form>
-						</FormContextProvider>
-					</ThemeProvider>
-				)
-			}}
-		</Observer>
-	)
+								</FieldContextProvider> */}
+                <WrapField path='checkFieldName' label='Check Field'>
+                  <Checkbox sx={{ ml: 2 }} path='checkFieldName' />
+                </WrapField>
+                <WrapField path='reportId' label='Report ID:'>
+                  <Input path='reportId' type='string' />
+                </WrapField>
+                <WrapField path='uiName' label='Name:'>
+                  <Input path='uiName' autoComplete='off' />
+                </WrapField>
+                <WrapField path='d.description' label='Description:'>
+                  <Input path='d.description' />
+                </WrapField>
+                <WrapField path='icon' label='Icon:'>
+                  <div
+                    sx={{
+                      display: 'flex',
+                      grid: 'auto-flow / 300px auto',
+                      gap: 1,
+                    }}
+                  >
+                    <Input path='icon' />
+                    <Icon value={formStore.getValue('icon')} />
+                  </div>
+                </WrapField>
+                <WrapField path='ars' label='Array' sx={{ mt: 2 }}>
+                  <Ar sx={{}} path='ars' />
+                </WrapField>
+              </Form>
+            </FormContextProvider>
+          </ThemeProvider>
+        )
+      }}
+    </Observer>
+  )
 }

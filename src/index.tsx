@@ -185,13 +185,14 @@ class Store {
     this.touched = {}
     this.isTouchedAll = false
   }
-  @action handleSubmit = (submit: () => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault()
-    this.touchAll()
-    if (this.isValid) {
-      submit()
-    }
-  }
+  handleSubmit = (submit: () => void) =>
+    action('handleSubmit', (e: React.ChangeEvent<HTMLInputElement>) => {
+      e.preventDefault()
+      this.touchAll()
+      if (this.isValid) {
+        submit()
+      }
+    })
 
   @action touch = (path: string) => {
     this.touched[path] = true

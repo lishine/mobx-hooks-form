@@ -288,7 +288,7 @@ export const FormContextProvider = ({
   children,
   formStore,
 }: {
-  children: React.ReactChildren
+  children: React.ReactNode
   formStore: ReturnType<typeof useForm>
 }) => <FormContext.Provider value={formStore}>{children}</FormContext.Provider>
 

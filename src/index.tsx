@@ -166,7 +166,6 @@ class Store {
   }
 
   @computed get validations() {
-    console.log('validations')
     return validate(this.schema, this.debouncedValues)
   }
   isRequired = computedFn(function isRequired(this: Store, path: string) {

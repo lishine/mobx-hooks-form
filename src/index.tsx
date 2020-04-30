@@ -185,12 +185,12 @@ class Store {
     this.touched = {}
     this.isTouchedAll = false
   }
-  handleSubmit = (submit: () => void) =>
+  handleSubmit = (submit: (values: Values) => void) =>
     action('handleSubmit', (e: React.ChangeEvent<HTMLInputElement>) => {
       e.preventDefault()
       this.touchAll()
       if (this.isValid) {
-        submit()
+        submit(this.values)
       }
     })
 

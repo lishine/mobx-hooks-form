@@ -1,8 +1,8 @@
-import React, { useContext, useMemo } from 'react'
-import { computed, action, observable, spy, toJS, reaction, autorun } from 'mobx'
+import React, { useContext } from 'react'
+import { computed, action, observable, spy } from 'mobx'
 import { computedFn } from 'mobx-utils'
 import { useLocalStore, observer } from 'mobx-react-lite'
-import { isEmpty, debounce, memoize } from 'lodash'
+import { isEmpty, debounce } from 'lodash'
 import * as yup from 'yup'
 
 const isObject = (obj: { index: string | number }) => typeof obj === 'object' && obj !== null
@@ -97,16 +97,16 @@ interface UseForm {
   defaultValues?: Values
   formName?: string
   debug?: boolean
+  DEBOUNCE_MS?: number
 }
-
-const DEBOUNCE_MS = 1000
 
 class Store {
   constructor(props: UseForm) {
-    const { schema, defaultValues, formName = '', debug = false } = props
+    const { schema, defaultValues, formName = '', debug = false, DEBOUNCE_MS = 0 } = props
     this.defaultValues = defaultValues || {}
     this.schema = schema
     this.formName = formName
+    this.DEBOUNCE_MS = DEBOUNCE_MS
     this.setValues(defaultValues || {})
     if (debug) {
       spy((event) => {
@@ -123,6 +123,7 @@ class Store {
 
   defaultValues: Values
   formName: string
+  DEBOUNCE_MS: number
   schema: yup.ObjectSchema<Values>
 
   @observable isTouchedAll = false
@@ -141,13 +142,13 @@ class Store {
   })
   @action setDebouncedValue = debounce((path: string, value: any) => {
     set(path)(value)(this.debouncedValues)
-  }, DEBOUNCE_MS)
+  }, this.DEBOUNCE_MS)
   @action pushDebouncedValue = debounce((path: string, value: any) => {
     get(path)(this.debouncedValues).push(value)
-  }, DEBOUNCE_MS)
+  }, this.DEBOUNCE_MS)
   @action removeDebouncedValue = debounce((path: string, index: number) => {
     get(path)(this.debouncedValues).splice(index, 1)
-  }, DEBOUNCE_MS)
+  }, this.DEBOUNCE_MS)
   @action pushValue = (path: string, value: any) => {
     get(path)(this.values).push(value)
     this.pushDebouncedValue(path, value)

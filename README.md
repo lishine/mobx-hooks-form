@@ -23,7 +23,7 @@
 ### TODO
 
 - see package size in imports
--
+- example fieldContext currently not working
 - tests
 - CI
 - documentation
@@ -36,3 +36,9 @@
 - connect the example with yarn link
 - optimize package size (tslib)
 - isSubmitting -> form disabled
+
+### Develop
+
+- package built with tsdx
+- to publish use np
+- node 12

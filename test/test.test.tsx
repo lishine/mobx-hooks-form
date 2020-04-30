@@ -1,5 +1,5 @@
 describe('it', () => {
-	it('it is fine', () => {
-		console.log('fine')
-	})
+  it('it is fine', () => {
+    console.log('fine')
+  })
 })

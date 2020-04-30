@@ -1,6 +1,6 @@
 import React from 'react'
 import { Input as BSInput } from 'reactstrap'
-import { useFieldContext } from '../../dist'
+import { useFieldContext } from '../../../dist'
 
 export const Input = (props) => {
   const { name, value, error, onBlur, onChange, id } = useFieldContext()

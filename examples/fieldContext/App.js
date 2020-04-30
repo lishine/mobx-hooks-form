@@ -10,7 +10,7 @@ import cs from 'classnames'
 
 // Common
 import { Input } from './components/Input'
-import { useForm, FormContextProvider, FieldContextProvider, useFieldContext } from '../dist'
+import { useForm, FormContextProvider, FieldContextProvider, useFieldContext } from '../../dist'
 import { sleep } from './utils'
 
 // Local

@@ -94,9 +94,9 @@ interface Touched {
 }
 interface UseForm {
   schema: yup.ObjectSchema<Values>
-  defaultValues: Values
-  formName: string
-  debug: boolean
+  defaultValues?: Values
+  formName?: string
+  debug?: boolean
 }
 
 const DEBOUNCE_MS = 1000

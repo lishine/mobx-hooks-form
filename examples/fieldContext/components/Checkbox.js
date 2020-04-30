@@ -1,5 +1,5 @@
 import React from 'react'
-import { useFieldContext } from '../../dist'
+import { useFieldContext } from '../../../dist'
 import { Checkbox as ReakitCheckbox } from 'reakit'
 
 export const Checkbox = (props) => {

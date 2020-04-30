@@ -22,6 +22,8 @@
 
 ### TODO
 
+- see package size in imports
+-
 - tests
 - CI
 - documentation

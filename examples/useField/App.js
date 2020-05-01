@@ -45,7 +45,7 @@ const schema = yup.object({
     .required(),
   ars: yup
     .array()
-    .of(yup.number().required())
+    .of(yup.string().required())
     .max(1001)
     .required(),
 })
@@ -55,7 +55,7 @@ const defaultValues = {
   uiName: '',
   reportId: '',
   enabled: true,
-  description: '',
+  d: { description: '' },
   icon: 'fa-file-chart-line',
   checkFieldName: true,
   ars: { firstName: 'First Name', familyName: 'Family Name' },
@@ -82,43 +82,40 @@ const WrapField = observer(({ path, children, label, ...props }) => {
   )
 })
 
-export const App = () => {
+export const App = observer(() => {
   const formStore = useForm({
     defaultValues,
     schema,
     formName: 'formName',
     debug: true,
+    // debugMobx: true,
   })
-  const [isSubmitting, setIsSubmitting] = useState(false)
 
   console.log('rendering App')
 
   const submit = useCallback(async () => {
-    setIsSubmitting(true)
-    await sleep(10000)
-    setIsSubmitting(false)
+    await sleep(5000)
+    throw Error('test error')
   }, [])
+  console.log('formStore.error', formStore.error)
 
+  console.log('rendering App-Component')
   return (
-    <Observer>
-      {() => {
-        console.log('rendering App-Component')
-        return (
-          <ThemeProvider theme={theme}>
-            <FormContextProvider formStore={formStore}>
-              <Form sx={{ mx: 'auto', width: 400 }} onSubmit={formStore.handleSubmit(submit)}>
-                <div
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    mt: 2,
-                    mb: 3,
-                  }}
-                >
-                  <SubmitButton isLoading={isSubmitting}>Submit</SubmitButton>
-                  <Button onClick={formStore.reset}>Reset</Button>
-                </div>
-                {/* <div sx={{ mt: 2, mb: 5 }}>
+    <ThemeProvider theme={theme}>
+      <FormContextProvider formStore={formStore}>
+        <Form sx={{ mx: 'auto', width: 400 }} onSubmit={formStore.handleSubmit(submit)}>
+          <div
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              mt: 2,
+              mb: 3,
+            }}
+          >
+            <SubmitButton>Submit</SubmitButton>
+            <Button onClick={formStore.reset}>Reset</Button>
+          </div>
+          {/* <div sx={{ mt: 2, mb: 5 }}>
 									<FieldContextProvider path="enabled">
 										{({ value, setValue }) => {
 											console.log('rendering Switch')
@@ -138,7 +135,7 @@ export const App = () => {
 										}}
 									</FieldContextProvider>
 								</div> */}
-                {/* <FieldContextProvider path="publisher">
+          {/* <FieldContextProvider path="publisher">
 									{fieldContext => (
 										<WrapField path="publisher" label="Publisher:">
 											<Lookahead
@@ -148,38 +145,35 @@ export const App = () => {
 										</WrapField>
 									)}
 								</FieldContextProvider> */}
-                <WrapField path='checkFieldName' label='Check Field'>
-                  <Checkbox sx={{ ml: 2 }} path='checkFieldName' />
-                </WrapField>
-                <WrapField path='reportId' label='Report ID:'>
-                  <Input path='reportId' type='string' />
-                </WrapField>
-                <WrapField path='uiName' label='Name:'>
-                  <Input path='uiName' autoComplete='off' />
-                </WrapField>
-                <WrapField path='d.description' label='Description:'>
-                  <Input path='d.description' />
-                </WrapField>
-                <WrapField path='icon' label='Icon:'>
-                  <div
-                    sx={{
-                      display: 'flex',
-                      grid: 'auto-flow / 300px auto',
-                      gap: 1,
-                    }}
-                  >
-                    <Input path='icon' />
-                    <Icon value={formStore.getValue('icon')} />
-                  </div>
-                </WrapField>
-                <WrapField path='ars' label='Array' sx={{ mt: 2 }}>
-                  <Ar sx={{}} path='ars' />
-                </WrapField>
-              </Form>
-            </FormContextProvider>
-          </ThemeProvider>
-        )
-      }}
-    </Observer>
+          <WrapField path='checkFieldName' label='Check Field'>
+            <Checkbox sx={{ ml: 2 }} path='checkFieldName' />
+          </WrapField>
+          <WrapField path='reportId' label='Report ID:'>
+            <Input autoFocus path='reportId' type='string' />
+          </WrapField>
+          <WrapField path='uiName' label='Name:'>
+            <Input path='uiName' autoComplete='off' />
+          </WrapField>
+          <WrapField path='d.description' label='Description:'>
+            <Input path='d.description' />
+          </WrapField>
+          <WrapField path='icon' label='Icon:'>
+            <div
+              sx={{
+                display: 'flex',
+                grid: 'auto-flow / 300px auto',
+                gap: 1,
+              }}
+            >
+              <Input path='icon' />
+              <Icon value={formStore.getValue('icon')} />
+            </div>
+          </WrapField>
+          <WrapField path='ars' label='Array' sx={{ mt: 2 }}>
+            <Ar sx={{}} path='ars' />
+          </WrapField>
+        </Form>
+      </FormContextProvider>
+    </ThemeProvider>
   )
-}
+})

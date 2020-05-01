@@ -1,5 +1,5 @@
 import React, { useContext } from 'react'
-import { computed, action, observable, spy } from 'mobx'
+import { observe, autorun, computed, action, observable, spy, toJS } from 'mobx'
 import { computedFn } from 'mobx-utils'
 import { useLocalStore, observer } from 'mobx-react-lite'
 import { isEmpty, debounce } from 'lodash'
@@ -97,37 +97,62 @@ interface UseForm {
   defaultValues?: Values
   formName?: string
   debug?: boolean
+  debugMobx?: boolean
   DEBOUNCE_MS?: number
 }
 
 class Store {
   constructor(props: UseForm) {
-    const { schema, defaultValues, formName = '', debug = false, DEBOUNCE_MS = 0 } = props
+    const { schema, defaultValues, formName = '', debug = false, debugMobx = false, DEBOUNCE_MS = 0 } = props
     this.defaultValues = defaultValues || {}
     this.schema = schema
+    this.debug = debug
     this.formName = formName
     this.DEBOUNCE_MS = DEBOUNCE_MS
     this.setValues(defaultValues || {})
+
+    const resetError = () => {
+      this.error = undefined
+    }
+
+    observe(this.values, () => resetError())
+
     if (debug) {
-      spy((event) => {
-        if (event.type === 'action') {
-          console.log(`%c${event.name} %c[ ${event.arguments} ]`, 'color: #bad', 'color: #bada55')
-        } else {
-          if (event.type || event.name) {
-            console.log(`%c ${event.type} | ${event.name}`, 'color: #f9d299')
-          }
-        }
+      autorun(() => {
+        console.log('values', toJS(this.values))
+        console.log('validations', toJS(this.validations))
+        console.log('error', toJS(this.error))
       })
+      if (debugMobx) {
+        spy((event) => {
+          if (event.type === 'action') {
+            console.log(`%c${event.name} %c[ ${event.arguments} ]`, 'color: #bad', 'color: #bada55')
+          } else {
+            if (event.type || event.name) {
+              console.log(`%c ${event.type} | ${event.name}`, 'color: #f9d299')
+            }
+          }
+        })
+      }
     }
   }
 
+  debug = false
   defaultValues: Values
   formName: string
-  DEBOUNCE_MS: number
+  DEBOUNCE_MS = 0
   schema: yup.ObjectSchema<Values>
 
   @observable isTouchedAll = false
   @observable touched = {} as Touched
+  @observable submitting = false
+  @observable error: any = undefined
+  @action setError = (error: any) => {
+    this.error = error
+  }
+  @action setSubmitting = (submitting: boolean) => {
+    this.submitting = submitting
+  }
 
   @observable values = {} as Values
   @observable debouncedValues = {} as Values
@@ -185,12 +210,14 @@ class Store {
     this.touched = {}
     this.isTouchedAll = false
   }
-  handleSubmit = (submit: (values: Values) => void) =>
-    action('handleSubmit', (e: React.ChangeEvent<HTMLInputElement>) => {
+  handleSubmit = (submit: (values: Values) => any) =>
+    action('handleSubmit', async (e: React.ChangeEvent<HTMLInputElement>) => {
       e.preventDefault()
       this.touchAll()
       if (this.isValid) {
-        submit(this.values)
+        this.setSubmitting(true)
+        await submit(this.values)?.catch((e: any) => this.setError(e))
+        this.setSubmitting(false)
       }
     })
 
@@ -214,6 +241,7 @@ class Store {
     const store = this
     return {
       path,
+      submitting: store.submitting,
       get value() {
         return store.getValue(path)
       },

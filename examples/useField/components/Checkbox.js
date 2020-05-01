@@ -6,6 +6,6 @@ import { useField } from '../../../dist'
 export const Checkbox = observer((props) => {
   const { value, onCheckedChange } = useField(props.path)
 
-  console.log(`rendering ${props.name}`)
+  console.log(`rendering ${props.path}`)
   return <ReakitCheckbox checked={value} name={props.path} onChange={onCheckedChange} {...props} />
 })

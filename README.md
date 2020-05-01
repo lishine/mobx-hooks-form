@@ -19,9 +19,19 @@
 - state spy
 - array - defaults/copy-last when adding new record
 - array example - disabled row when empty
+- submitting -> form disabled
+- submitting state
+- debug, debugMobx
+- form error state
+- form autofocus - seems to just work
 
 ### TODO
 
+- reimplement with observe()
+- consider removing the debounce feature
+- getValue = computedFn: computedFn unnecesery
+- fix - set path of value which is not in defaultValues
+- values types as the schema
 - see package size in imports
 - example fieldContext currently not working
 - tests
@@ -35,7 +45,6 @@
 - hidden fields logic
 - connect the example with yarn link
 - optimize package size (tslib)
-- isSubmitting -> form disabled
 
 ### Develop
 

@@ -4,8 +4,8 @@ import { Button } from './Button'
 import { useFormContext } from '../../../dist'
 
 export const SubmitButton = observer((props) => {
-  const { isValid } = useFormContext()
+  const { isValid, submitting } = useFormContext()
 
   console.log(`rendering submit button`)
-  return <Button type='submit' disabled={!isValid} {...props} />
+  return <Button type='submit' isLoading={submitting} disabled={!isValid} {...props} />
 })
